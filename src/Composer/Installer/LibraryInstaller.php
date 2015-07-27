@@ -68,7 +68,26 @@ class LibraryInstaller implements InstallerInterface
      */
     public function isInstalled(InstalledRepositoryInterface $repo, PackageInterface $package)
     {
-        return $repo->hasPackage($package) && is_readable($this->getInstallPath($package));
+        // ensure the code is installed
+        $isCodeInstalled = $repo->hasPackage($package) && is_readable($this->getInstallPath($package));
+
+        // check for the presence of binaries
+        // assume they're installed if they're not present
+        $areBinariesInstalled = true;
+        $binaries = $this->getBinaries($package);
+        if ($binaries) {
+            foreach ($binaries as $bin) {
+                $link = $this->binDir.'/'.basename($bin);
+
+                $areBinariesInstalled = is_link($link) || file_exists($link);
+
+                if (!$areBinariesInstalled) {
+                    break;
+                }
+            }
+        }
+
+        return $isCodeInstalled && $areBinariesInstalled;
     }
 
     /**

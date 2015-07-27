@@ -87,13 +87,32 @@ class LibraryInstallerTest extends TestCase
         $package = $this->createPackageMock();
 
         $this->repository
-            ->expects($this->exactly(2))
+            ->expects($this->exactly(5))
             ->method('hasPackage')
             ->with($package)
-            ->will($this->onConsecutiveCalls(true, false));
+            ->will($this->onConsecutiveCalls(true, false, false, true, true));
 
+        $package
+            ->expects($this->exactly(5))
+            ->method('getBinaries')
+            ->will($this->onConsecutiveCalls(null, null, array("dummy"), array("dummy"), array("dummy")));
+
+        // test packages with no binaries
         $this->assertTrue($library->isInstalled($this->repository, $package));
         $this->assertFalse($library->isInstalled($this->repository, $package));
+
+        // and packages with binaries
+        // totally missing binary
+        $this->assertFalse($library->isInstalled($this->repository, $package));
+
+        // binary is symlink
+        symlink(__FILE__, $this->binDir . '/dummy');
+        $this->assertTrue($library->isInstalled($this->repository, $package));
+
+        // binary is regular file
+        unlink($this->binDir . '/dummy');
+        copy(__FILE__, $this->binDir . '/dummy');
+        $this->assertTrue($library->isInstalled($this->repository, $package));
     }
 
     /**
